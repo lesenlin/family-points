@@ -25,6 +25,10 @@
     padding:10px 16px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
   }
   header .tabs{display:flex; flex-wrap:wrap; gap:8px; flex:1;}
+  #crumb{display:none; flex:1; font-weight:600; color:#b8531f; font-size:15px; align-self:center;}
+  body.nav-collapsed header .tabs{display:none;}
+  body.nav-collapsed #crumb{display:inline-block;}
+  #navToggle{font-size:15px; line-height:1; padding:5px 10px;}
   .tab{
     border:1px solid var(--line); background:#fff; color:var(--ink);
     padding:7px 14px; border-radius:999px; cursor:pointer; font-size:14px;
@@ -158,11 +162,13 @@
 <body>
 <header>
   <div class="tabs" id="tabs"></div>
+  <span id="crumb"></span>
   <div class="ctrls">
     <span id="status"><span class="dot"></span>加载中…</span>
     <label><input type="checkbox" id="auto" checked> 自动刷新</label>
     <button class="btn" id="reload">↻ 刷新</button>
     <button class="btn" id="print">🖨 打印</button>
+    <button class="btn" id="navToggle" title="收起 / 展开导航">⊟</button>
   </div>
 </header>
 
@@ -187,6 +193,20 @@
   const elContent = document.getElementById('content');
   const elStatus = document.getElementById('status');
   const elAuto = document.getElementById('auto');
+  const elCrumb = document.getElementById('crumb');
+  const elNavToggle = document.getElementById('navToggle');
+
+  // 导航收缩 / 展开（状态存 localStorage）
+  function applyCollapsed(collapsed){
+    document.body.classList.toggle('nav-collapsed', collapsed);
+    elNavToggle.textContent = collapsed ? '☰' : '⊟';
+    elNavToggle.title = collapsed ? '展开导航' : '收起导航';
+  }
+  elNavToggle.onclick = ()=>{
+    const collapsed = !document.body.classList.contains('nav-collapsed');
+    applyCollapsed(collapsed);
+    localStorage.setItem('navCollapsed', collapsed ? '1' : '0');
+  };
 
   // 建标签
   DOCS.forEach(d=>{
@@ -227,6 +247,8 @@
 
   function switchDoc(d){
     current = d; lastText=''; highlightTab();
+    elCrumb.textContent = d.title;
+    localStorage.setItem('activeDoc', d.id);   // 记住当前标签
     if(d.type==='card'){ renderCard(); setStatus('live','积分卡 · 可填写'); return; }
     elContent.innerHTML='加载中…';
     load(true);
@@ -372,8 +394,11 @@
   // 自动轮询
   setInterval(()=>{ if(elAuto.checked) load(false); }, 2000);
 
-  highlightTab();
-  load(true);
+  // 初始化：恢复收缩状态 + 上次打开的标签
+  applyCollapsed(localStorage.getItem('navCollapsed') === '1');
+  const savedId = localStorage.getItem('activeDoc');
+  const startDoc = DOCS.find(d => d.id === savedId) || DOCS[0];
+  switchDoc(startDoc);
 </script>
 </body>
 </html>
