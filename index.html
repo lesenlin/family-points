@@ -161,7 +161,22 @@
     .md blockquote{padding:.5em .8em;}
     /* 每日积分卡 */
     .pc h1{font-size:20px;}
-    table.pc-t{display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; font-size:13px; white-space:nowrap;}
+    /* 录入表改为堆叠卡片：行为输入独占一行，控件一行 */
+    table.pc-t, table.pc-t tbody{display:block;}
+    table.pc-t thead{display:none;}
+    table.pc-t tr{display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+      border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:8px; background:#fff;}
+    table.pc-t td{display:block; border:none; padding:0;}
+    table.pc-t td:nth-child(1){flex:1 1 100%;}                 /* 行为输入：整行 */
+    table.pc-t td:nth-child(2){flex:1 1 auto;}                 /* 等级 */
+    table.pc-t td:nth-child(3){flex:0 0 auto;}                 /* 次数 */
+    table.pc-t td:nth-child(4){flex:0 0 auto; font-size:13px; color:var(--muted);} /* 小计 */
+    table.pc-t td:nth-child(5){flex:0 0 auto; margin-left:auto;} /* 删除靠右 */
+    table.pc-t input[type=text]{width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:15px; background:#fff;}
+    table.pc-t select{width:100%; padding:8px 6px; font-size:14px;}
+    table.pc-t input[type=number]{width:54px; padding:8px 4px; font-size:15px;}
+    .delrow{font-size:20px; padding:4px 8px;}
+    .addrow{width:100%; padding:10px; font-size:14px;}
     .pc-head{gap:10px; font-size:14px;}
     .pc-box{min-width:calc(50% - 7px);}    /* 结算框每行两个 */
     .pc-box .num{font-size:26px;}
