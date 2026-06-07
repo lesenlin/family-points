@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家庭成长积分约定 · 实时预览</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+  :root{
+    --bg:#f5f3ef; --card:#ffffff; --ink:#2c2c2c; --muted:#888;
+    --accent:#e8743b; --accent2:#f6b352; --line:#ece8e1;
+    --th:#fff7ef; --zebra:#faf8f4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    line-height:1.75; font-size:16px;
+  }
+  /* 顶部导航 */
+  header{
+    position:sticky; top:0; z-index:10;
+    background:rgba(255,255,255,.92); backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:10px 16px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  }
+  header .tabs{display:flex; flex-wrap:wrap; gap:8px; flex:1;}
+  .tab{
+    border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:7px 14px; border-radius:999px; cursor:pointer; font-size:14px;
+    transition:.15s; white-space:nowrap;
+  }
+  .tab:hover{border-color:var(--accent2);}
+  .tab.active{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border-color:transparent; box-shadow:0 2px 8px rgba(232,116,59,.3);}
+  .ctrls{display:flex; gap:10px; align-items:center; font-size:13px; color:var(--muted);}
+  .ctrls label{display:flex; gap:5px; align-items:center; cursor:pointer;}
+  .btn{border:1px solid var(--line); background:#fff; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px;}
+  .btn:hover{border-color:var(--accent2);}
+  #status{font-size:12px; color:var(--muted); min-width:90px;}
+  #status .dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:#bbb; margin-right:5px; vertical-align:middle;}
+  #status.live .dot{background:#48b15a; box-shadow:0 0 0 3px rgba(72,177,90,.18);}
+  #status.err .dot{background:#e0524d;}
+  /* 内容卡片 */
+  main{max-width:920px; margin:26px auto; padding:0 16px;}
+  .card{
+    background:var(--card); border-radius:16px; padding:40px 48px;
+    box-shadow:0 6px 24px rgba(0,0,0,.06); border:1px solid var(--line);
+  }
+  .md h1{font-size:30px; margin:.2em 0 .6em; line-height:1.3; border-bottom:3px solid var(--accent2); padding-bottom:.3em;}
+  .md h2{font-size:23px; margin:1.5em 0 .5em; color:#b8531f;}
+  .md h3{font-size:19px; margin:1.3em 0 .4em; color:#444;}
+  .md h4{font-size:17px; margin:1.1em 0 .3em; color:#555;}
+  .md p{margin:.6em 0;}
+  .md ul,.md ol{padding-left:1.4em;}
+  .md li{margin:.25em 0;}
+  .md strong{color:#b8531f;}
+  .md hr{border:none; border-top:1px dashed var(--line); margin:1.6em 0;}
+  .md blockquote{
+    margin:1em 0; padding:.6em 1.1em; background:var(--th);
+    border-left:4px solid var(--accent2); border-radius:0 8px 8px 0; color:#6a5a48;
+  }
+  .md blockquote p{margin:.3em 0;}
+  .md table{border-collapse:collapse; width:100%; margin:1.2em 0; font-size:14.5px; overflow:hidden; border-radius:10px; box-shadow:0 1px 0 var(--line);}
+  .md th,.md td{border:1px solid var(--line); padding:9px 12px; text-align:left; vertical-align:top;}
+  .md th{background:var(--th); font-weight:600; color:#b8531f;}
+  .md tbody tr:nth-child(even){background:var(--zebra);}
+  .md code{background:#f0ece4; padding:.1em .4em; border-radius:5px; font-size:.9em;}
+  /* 分页符在屏幕上显示为分隔条 */
+  .md div[style*="page-break"]{
+    height:0; border-top:2px dashed var(--accent2); margin:2.4em 0;
+    position:relative;
+  }
+  .md div[style*="page-break"]::after{
+    content:"✂ 分页"; position:absolute; right:0; top:-.9em; font-size:11px;
+    color:var(--accent); background:var(--card); padding:0 8px;
+  }
+  footer{text-align:center; color:var(--muted); font-size:12px; padding:20px;}
+  /* ===== 每日积分卡 ===== */
+  .pc h1{font-size:27px; border-bottom:3px solid var(--accent2); padding-bottom:.3em; margin:.1em 0 .7em;}
+  .pc-head{display:flex; flex-wrap:wrap; gap:18px; margin-bottom:18px; font-size:15px;}
+  .pc-head label{display:flex; align-items:center; gap:6px; color:#555;}
+  .pc-head input{border:none; border-bottom:1.5px solid var(--line); padding:4px 6px; font-size:15px; font-family:inherit; background:transparent; min-width:110px;}
+  .pc-head input:focus{outline:none; border-color:var(--accent);}
+  .pc-sec{margin:18px 0;}
+  .pc-sec h3{font-size:17px; margin:0 0 8px; display:flex; align-items:center; gap:8px;}
+  .pc-sec h3 .tag{font-size:12px; font-weight:400; color:var(--muted);}
+  table.pc-t{border-collapse:collapse; width:100%; font-size:14.5px;}
+  table.pc-t th,table.pc-t td{border:1px solid var(--line); padding:6px 8px; text-align:center;}
+  table.pc-t th{background:var(--th); color:#b8531f; font-weight:600;}
+  table.pc-t td:first-child{text-align:left;}
+  table.pc-t input[type=text]{width:100%; border:none; font-size:14.5px; font-family:inherit; background:transparent;}
+  table.pc-t input[type=number]{width:52px; border:1px solid var(--line); border-radius:6px; padding:4px; text-align:center; font-family:inherit;}
+  table.pc-t select{border:1px solid var(--line); border-radius:6px; padding:4px 6px; font-family:inherit; background:#fff;}
+  table.pc-t input:focus,table.pc-t select:focus{outline:none; border-color:var(--accent);}
+  .pc-sub{font-weight:600; color:#b8531f;}
+  .addrow{margin-top:8px; border:1px dashed var(--line); background:#fff; border-radius:8px; padding:6px 12px; cursor:pointer; font-size:13px; color:var(--muted);}
+  .addrow:hover{border-color:var(--accent2); color:var(--accent);}
+  .delrow{border:none; background:transparent; color:#ccc; cursor:pointer; font-size:16px; line-height:1;}
+  .delrow:hover{color:#e0524d;}
+  /* 结算区 */
+  .pc-calc{display:flex; flex-wrap:wrap; gap:14px; align-items:stretch; margin:22px 0;}
+  .pc-box{flex:1; min-width:120px; background:var(--zebra); border:1px solid var(--line); border-radius:12px; padding:14px 16px; text-align:center;}
+  .pc-box .lbl{font-size:13px; color:var(--muted);}
+  .pc-box .num{font-size:30px; font-weight:700; margin-top:4px;}
+  .pc-box.final{background:linear-gradient(135deg,#fff7ef,#fdeede); border-color:var(--accent2);}
+  .pc-box.final .num{font-size:40px; color:var(--accent);}
+  /* 处置档 */
+  .tiers{display:grid; grid-template-columns:1fr; gap:8px; margin:14px 0;}
+  .tier{border:1px solid var(--line); border-radius:10px; padding:10px 14px; font-size:14px; opacity:.45; transition:.2s;}
+  .tier .t-h{font-weight:700;}
+  .tier.on{opacity:1; border-color:var(--accent); background:var(--th); box-shadow:0 2px 10px rgba(232,116,59,.15);}
+  .star{display:inline-block; margin-left:10px; padding:3px 10px; border-radius:999px; font-size:13px; background:#eee; color:#999;}
+  .star.on{background:linear-gradient(135deg,#f6b352,#e8743b); color:#fff;}
+  .pc-foot{display:flex; flex-wrap:wrap; gap:18px; margin-top:22px; padding-top:16px; border-top:1px dashed var(--line); font-size:15px; color:#555;}
+  .pc-foot label{display:flex; align-items:center; gap:6px;}
+  .pc-foot input{border:none; border-bottom:1.5px solid var(--line); padding:4px 6px; font-family:inherit; background:transparent; min-width:90px;}
+  .pc-actions{margin-top:16px; display:flex; gap:10px;}
+  /* 打印 */
+  @media print{
+    header,footer,.addrow,.delrow,.pc-actions{display:none;}
+    body{background:#fff;}
+    main{margin:0; max-width:none; padding:0;}
+    .card{box-shadow:none; border:none; border-radius:0; padding:0;}
+    .md div[style*="page-break"]{page-break-after:always; border:none; height:0; margin:0;}
+    .md div[style*="page-break"]::after{display:none;}
+    .tier{opacity:1 !important;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="tabs" id="tabs"></div>
+  <div class="ctrls">
+    <span id="status"><span class="dot"></span>加载中…</span>
+    <label><input type="checkbox" id="auto" checked> 自动刷新</label>
+    <button class="btn" id="reload">↻ 刷新</button>
+    <button class="btn" id="print">🖨 打印</button>
+  </div>
+</header>
+
+<main>
+  <div class="card"><div class="md" id="content">正在加载…</div></div>
+</main>
+<footer>家庭成长积分约定 · 本页实时读取同目录 Markdown 文件</footer>
+
+<script>
+  const DOCS = [
+    { id:'contract', title:'🌟 家庭加分扣分明细表', file:'家庭行为加分扣分明细表.md' },
+    { id:'school',   title:'🏫 学校加分扣分明细表',     file:'学校行为加分扣分明细表.md' },
+    { id:'manual',   title:'📖 家长执行手册',           file:'家长执行手册.md' },
+    { id:'card',     title:'🗓 每日积分卡（可填写）',   type:'card' },
+  ];
+
+  marked.setOptions({ gfm:true, breaks:false });
+
+  let current = DOCS[0];
+  let lastText = '';
+  const elTabs = document.getElementById('tabs');
+  const elContent = document.getElementById('content');
+  const elStatus = document.getElementById('status');
+  const elAuto = document.getElementById('auto');
+
+  // 建标签
+  DOCS.forEach(d=>{
+    const b = document.createElement('button');
+    b.className='tab'; b.textContent=d.title; b.dataset.id=d.id;
+    b.onclick=()=>switchDoc(d);
+    elTabs.appendChild(b);
+  });
+
+  function highlightTab(){
+    [...elTabs.children].forEach(b=>b.classList.toggle('active', b.dataset.id===current.id));
+  }
+
+  function setStatus(state, text){
+    elStatus.className = state; // '', 'live', 'err'
+    elStatus.innerHTML = '<span class="dot"></span>' + text;
+  }
+
+  async function load(force){
+    if(current.type==='card') return; // 积分卡不轮询
+    try{
+      const res = await fetch(encodeURIComponent(current.file) + '?t=' + Date.now(), {cache:'no-store'});
+      if(!res.ok) throw new Error(res.status);
+      const text = await res.text();
+      if(force || text !== lastText){
+        lastText = text;
+        elContent.innerHTML = marked.parse(text);
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2,'0');
+        const mm = String(now.getMinutes()).padStart(2,'0');
+        const ss = String(now.getSeconds()).padStart(2,'0');
+        setStatus('live', `已更新 ${hh}:${mm}:${ss}`);
+      }
+    }catch(e){
+      setStatus('err', '读取失败（需本地服务器）');
+    }
+  }
+
+  function switchDoc(d){
+    current = d; lastText=''; highlightTab();
+    if(d.type==='card'){ renderCard(); setStatus('live','积分卡 · 可填写'); return; }
+    elContent.innerHTML='加载中…';
+    load(true);
+  }
+
+  /* ===== 每日积分卡 ===== */
+  function deductRow(){
+    return `<tr>
+      <td><input type="text" placeholder="违规行为描述"></td>
+      <td><select class="lv"><option value="1">一级 −1</option><option value="3">二级 −3</option><option value="5">三级 −5</option></select></td>
+      <td><input type="number" class="ct" min="1" value="1"></td>
+      <td class="rt pc-sub">−1</td>
+      <td><button class="delrow" title="删除">✕</button></td>
+    </tr>`;
+  }
+  function addRow(){
+    return `<tr>
+      <td><input type="text" placeholder="良好行为描述"></td>
+      <td><select class="lv"><option value="2">主动 +2</option><option value="1">+1（提醒后 / 小项主动）</option><option value="0.5">+0.5（提醒后小项）</option></select></td>
+      <td><input type="number" class="ct" min="1" value="1"></td>
+      <td class="rt pc-sub">+1</td>
+      <td><button class="delrow" title="删除">✕</button></td>
+    </tr>`;
+  }
+
+  function renderCard(){
+    elContent.innerHTML = `
+    <div class="pc">
+      <h1>🗓 每日积分卡</h1>
+      <div class="pc-head">
+        <label>宝贝姓名：<input type="text" placeholder="________"></label>
+        <label>日期：<input type="date"></label>
+        <label>每日基础分：<strong style="color:#b8531f;font-size:18px">20</strong></label>
+      </div>
+
+      <div class="pc-sec">
+        <h3>➖ 扣分记录 <span class="tag">（一级−1 / 二级−3 / 三级−5，反复逐次扣）</span></h3>
+        <table class="pc-t">
+          <thead><tr><th style="width:46%">违规行为</th><th>等级</th><th>次数</th><th>小计</th><th></th></tr></thead>
+          <tbody id="dBody">${deductRow()+deductRow()+deductRow()}</tbody>
+        </table>
+        <button class="addrow" data-add="d">＋ 添加一行</button>
+      </div>
+
+      <div class="pc-sec">
+        <h3>➕ 加分记录 <span class="tag">（主动做事/整理/友好/认错 +1，突出表现 +2）</span></h3>
+        <table class="pc-t">
+          <thead><tr><th style="width:46%">良好行为</th><th>类型</th><th>次数</th><th>小计</th><th></th></tr></thead>
+          <tbody id="aBody">${addRow()+addRow()}</tbody>
+        </table>
+        <button class="addrow" data-add="a">＋ 添加一行</button>
+      </div>
+
+      <div class="pc-calc">
+        <div class="pc-box"><div class="lbl">基础分</div><div class="num">20</div></div>
+        <div class="pc-box"><div class="lbl">总加分</div><div class="num" id="sumA" style="color:#48b15a">+0</div></div>
+        <div class="pc-box"><div class="lbl">总扣分</div><div class="num" id="sumD" style="color:#e0524d">−0</div></div>
+        <div class="pc-box final"><div class="lbl">当日剩余分数</div><div class="num" id="remain">20</div></div>
+      </div>
+
+      <div class="pc-sec">
+        <h3>📊 今日处置档 <span class="tag">（按剩余分数自动判定）</span> <span class="star" id="star">⭐ 金星日</span></h3>
+        <div class="tiers">
+          <div class="tier" data-min="15"><span class="t-h">≥15 分 · 好天 😀</span>　只需温柔提醒，正常享受全部特权。</div>
+          <div class="tier" data-min="10" data-max="14"><span class="t-h">10–14 分 🙂</span>　扣 1 项娱乐特权 + 用 2 句话复盘。</div>
+          <div class="tier" data-min="0" data-max="9"><span class="t-h">0–9 分 😐</span>　取消自由活动 + 冷静角 5 分钟 + 复盘。</div>
+          <div class="tier" data-max="-0.001"><span class="t-h">≤0 分 😟</span>　取消全部特权 + 冷静角 7 分钟 + 1 项家务 + 书面反思 + 睡前谈心。</div>
+        </div>
+      </div>
+
+      <div class="pc-foot">
+        <label>📒 成长存折累计：<input type="number" id="bankPrev" placeholder="昨日" style="width:70px"> + 今日结余 <strong id="todayNet" style="color:#b8531f">0</strong> = <strong id="bankNow" style="color:#b8531f">0</strong> 分</label>
+        <label>家长签字：<input type="text" placeholder="________"></label>
+      </div>
+      <div class="pc-foot" style="border:none;padding-top:0">
+        <label style="flex:1">今日复盘 / 备注：<input type="text" placeholder="我错在……，下次我会……" style="flex:1;min-width:240px"></label>
+      </div>
+
+      <div class="pc-actions">
+        <button class="btn" id="cardPrint">🖨 打印这张卡</button>
+        <button class="btn" id="cardClear">🧹 清空重填</button>
+      </div>
+    </div>`;
+    wireCard();
+    recalc();
+  }
+
+  function wireCard(){
+    elContent.querySelectorAll('[data-add]').forEach(b=>{
+      b.onclick=()=>{
+        const isD = b.dataset.add==='d';
+        const body = document.getElementById(isD?'dBody':'aBody');
+        body.insertAdjacentHTML('beforeend', isD?deductRow():addRow());
+        wireRows(); recalc();
+      };
+    });
+    document.getElementById('cardPrint').onclick=()=>window.print();
+    document.getElementById('cardClear').onclick=()=>renderCard();
+    document.getElementById('bankPrev').addEventListener('input', recalc);
+    wireRows();
+  }
+  function wireRows(){
+    elContent.querySelectorAll('#dBody tr, #aBody tr').forEach(tr=>{
+      tr.querySelector('.lv').oninput = recalc;
+      tr.querySelector('.ct').oninput = recalc;
+      tr.querySelector('.delrow').onclick = ()=>{ tr.remove(); recalc(); };
+    });
+  }
+  function recalc(){
+    let totD=0, totA=0;
+    document.querySelectorAll('#dBody tr').forEach(tr=>{
+      const v=+tr.querySelector('.lv').value, c=Math.max(1,+tr.querySelector('.ct').value||1);
+      const s=v*c; totD+=s; tr.querySelector('.rt').textContent='−'+s;
+    });
+    document.querySelectorAll('#aBody tr').forEach(tr=>{
+      const v=+tr.querySelector('.lv').value, c=Math.max(1,+tr.querySelector('.ct').value||1);
+      const s=v*c; totA+=s; tr.querySelector('.rt').textContent='+'+s;
+    });
+    const remain = 20 + totA - totD;
+    document.getElementById('sumA').textContent='+'+totA;
+    document.getElementById('sumD').textContent='−'+totD;
+    const rEl=document.getElementById('remain');
+    rEl.textContent=remain;
+    rEl.style.color = remain>=15?'#48b15a' : remain>=10?'#d99a2b' : remain>=0?'#e0793b' : '#e0524d';
+    // 高亮处置档
+    document.querySelectorAll('.tier').forEach(t=>{
+      const mn = t.dataset.min!==undefined?+t.dataset.min:-Infinity;
+      const mx = t.dataset.max!==undefined?+t.dataset.max:Infinity;
+      t.classList.toggle('on', remain>=mn && remain<=mx);
+    });
+    // 金星日
+    document.getElementById('star').classList.toggle('on', remain>=18);
+    // 成长存折（只记当日净结余正分）
+    const realNet = Math.max(0, totA - totD);
+    document.getElementById('todayNet').textContent = realNet;
+    const prev = +document.getElementById('bankPrev').value || 0;
+    document.getElementById('bankNow').textContent = prev + realNet;
+  }
+
+  document.getElementById('reload').onclick = ()=>load(true);
+  document.getElementById('print').onclick = ()=>window.print();
+
+  // 自动轮询
+  setInterval(()=>{ if(elAuto.checked) load(false); }, 2000);
+
+  highlightTab();
+  load(true);
+</script>
+</body>
+</html>
