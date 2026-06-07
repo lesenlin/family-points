@@ -462,10 +462,21 @@
   function applyCard(data){
     const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v||''; };
     set('pcName',data.name); set('bankPrev',data.bankPrev); set('pcSign',data.sign); set('pcNote',data.note);
-    if(Array.isArray(data.deducts) && data.deducts.length)
-      document.getElementById('dBody').innerHTML = data.deducts.map(r=>deductRow(r.t,r.lv,r.ct)).join('');
-    if(Array.isArray(data.adds) && data.adds.length)
-      document.getElementById('aBody').innerHTML = data.adds.map(r=>addRow(r.t,r.lv,r.ct)).join('');
+    if(data.name) localStorage.setItem('cardName', data.name);
+    // 始终按记录重建行（即使为空，也回到默认空行，避免残留上一天的数据）
+    const ds = (Array.isArray(data.deducts) && data.deducts.length) ? data.deducts.map(r=>deductRow(r.t,r.lv,r.ct)).join('') : (deductRow()+deductRow()+deductRow());
+    const as = (Array.isArray(data.adds) && data.adds.length) ? data.adds.map(r=>addRow(r.t,r.lv,r.ct)).join('') : (addRow()+addRow());
+    document.getElementById('dBody').innerHTML = ds;
+    document.getElementById('aBody').innerHTML = as;
+    wireRows(); recalc();
+  }
+  // 切换到没有记录的日期 → 重置成空白新卡（仅保留孩子姓名）
+  function resetCard(){
+    document.getElementById('dBody').innerHTML = deductRow()+deductRow()+deductRow();
+    document.getElementById('aBody').innerHTML = addRow()+addRow();
+    const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v||''; };
+    set('pcName', localStorage.getItem('cardName')||'');
+    set('bankPrev',''); set('pcSign',''); set('pcNote','');
     wireRows(); recalc();
   }
   async function loadCard(){
@@ -476,7 +487,7 @@
       st.textContent='读取中…'; st.className='savest';
       const j = await api('/api/card?date='+encodeURIComponent(date));
       if(j.data){ applyCard(j.data); st.textContent='已载入 '+date+' 的记录'; st.className='savest ok'; }
-      else { st.textContent='（'+date+' 暂无记录，填好后点保存）'; st.className='savest'; }
+      else { resetCard(); st.textContent='🆕 '+date+' 新的一天，填好后点保存'; st.className='savest'; }
     }catch(e){ if(!handleAuthErr(e)){ st.textContent='读取失败：'+e.message; st.className='savest err'; } }
   }
   async function saveCard(){
@@ -485,7 +496,9 @@
     if(!date){ st.textContent='请先选日期'; st.className='savest err'; return; }
     try{
       st.textContent='保存中…'; st.className='savest';
-      await api('/api/card',{ method:'POST', body:{ date, data:serializeCard() } });
+      const data = serializeCard();
+      if(data.name) localStorage.setItem('cardName', data.name);
+      await api('/api/card',{ method:'POST', body:{ date, data } });
       st.textContent='✓ 已保存到云端'; st.className='savest ok';
     }catch(e){ if(!handleAuthErr(e)){ st.textContent='保存失败：'+e.message; st.className='savest err'; } }
   }
