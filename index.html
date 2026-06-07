@@ -115,6 +115,34 @@
   .pc-foot label{display:flex; align-items:center; gap:6px;}
   .pc-foot input{border:none; border-bottom:1.5px solid var(--line); padding:4px 6px; font-family:inherit; background:transparent; min-width:90px;}
   .pc-actions{margin-top:16px; display:flex; gap:10px;}
+  /* ===== 移动端适配 ===== */
+  @media (max-width:600px){
+    body{font-size:15px; line-height:1.7;}
+    header{padding:8px 10px; gap:6px;}
+    .tab{padding:6px 10px; font-size:13px;}
+    .ctrls{gap:6px; font-size:12px;}
+    #status{display:none;}                 /* 省空间 */
+    .ctrls label{display:none;}            /* 隐藏“自动刷新”文字，移动端仍默认轮询 */
+    .btn{padding:5px 9px; font-size:12px;}
+    main{margin:12px auto; padding:0 8px;}
+    .card{padding:18px 14px; border-radius:12px;}
+    .md h1{font-size:22px;}
+    .md h2{font-size:18px;}
+    .md h3{font-size:16px;}
+    .md p,.md li{font-size:15px;}
+    /* 宽表格改为可横向滑动 */
+    .md table{display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; font-size:13px; border-radius:8px;}
+    .md th,.md td{padding:6px 8px;}
+    .md blockquote{padding:.5em .8em;}
+    /* 每日积分卡 */
+    .pc h1{font-size:20px;}
+    table.pc-t{display:block; overflow-x:auto; -webkit-overflow-scrolling:touch; font-size:13px; white-space:nowrap;}
+    .pc-head{gap:10px; font-size:14px;}
+    .pc-box{min-width:calc(50% - 7px);}    /* 结算框每行两个 */
+    .pc-box .num{font-size:26px;}
+    .pc-box.final .num{font-size:32px;}
+    .pc-foot{gap:12px; font-size:14px;}
+  }
   /* 打印 */
   @media print{
     header,footer,.addrow,.delrow,.pc-actions{display:none;}
