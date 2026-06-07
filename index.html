@@ -374,7 +374,7 @@
         <h3>➖ 扣分记录 <span class="tag">（一级−1 / 二级−3 / 三级−5，反复逐次扣）</span></h3>
         <table class="pc-t">
           <thead><tr><th style="width:46%">违规行为</th><th>等级</th><th>次数</th><th>小计</th><th></th></tr></thead>
-          <tbody id="dBody">${deductRow()+deductRow()+deductRow()}</tbody>
+          <tbody id="dBody"></tbody>
         </table>
         <button class="addrow" data-add="d">＋ 添加一行</button>
       </div>
@@ -383,7 +383,7 @@
         <h3>➕ 加分记录 <span class="tag">（主动做事/整理/友好/认错 +1，突出表现 +2）</span></h3>
         <table class="pc-t">
           <thead><tr><th style="width:46%">良好行为</th><th>类型</th><th>次数</th><th>小计</th><th></th></tr></thead>
-          <tbody id="aBody">${addRow()+addRow()}</tbody>
+          <tbody id="aBody"></tbody>
         </table>
         <button class="addrow" data-add="a">＋ 添加一行</button>
       </div>
@@ -438,8 +438,8 @@
     document.getElementById('cardSave').onclick = saveCard;
     document.getElementById('cardPrint').onclick = ()=>window.print();
     document.getElementById('cardClear').onclick = ()=>{
-      document.getElementById('dBody').innerHTML = deductRow()+deductRow()+deductRow();
-      document.getElementById('aBody').innerHTML = addRow()+addRow();
+      document.getElementById('dBody').innerHTML = '';
+      document.getElementById('aBody').innerHTML = '';
       ['pcName','bankPrev','pcSign','pcNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       wireRows(); recalc();
     };
@@ -464,16 +464,16 @@
     set('pcName',data.name); set('bankPrev',data.bankPrev); set('pcSign',data.sign); set('pcNote',data.note);
     if(data.name) localStorage.setItem('cardName', data.name);
     // 始终按记录重建行（即使为空，也回到默认空行，避免残留上一天的数据）
-    const ds = (Array.isArray(data.deducts) && data.deducts.length) ? data.deducts.map(r=>deductRow(r.t,r.lv,r.ct)).join('') : (deductRow()+deductRow()+deductRow());
-    const as = (Array.isArray(data.adds) && data.adds.length) ? data.adds.map(r=>addRow(r.t,r.lv,r.ct)).join('') : (addRow()+addRow());
+    const ds = (Array.isArray(data.deducts) && data.deducts.length) ? data.deducts.map(r=>deductRow(r.t,r.lv,r.ct)).join('') : '';
+    const as = (Array.isArray(data.adds) && data.adds.length) ? data.adds.map(r=>addRow(r.t,r.lv,r.ct)).join('') : '';
     document.getElementById('dBody').innerHTML = ds;
     document.getElementById('aBody').innerHTML = as;
     wireRows(); recalc();
   }
   // 切换到没有记录的日期 → 重置成空白新卡（仅保留孩子姓名）
   function resetCard(){
-    document.getElementById('dBody').innerHTML = deductRow()+deductRow()+deductRow();
-    document.getElementById('aBody').innerHTML = addRow()+addRow();
+    document.getElementById('dBody').innerHTML = '';
+    document.getElementById('aBody').innerHTML = '';
     const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v||''; };
     set('pcName', localStorage.getItem('cardName')||'');
     set('bankPrev',''); set('pcSign',''); set('pcNote','');
