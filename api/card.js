@@ -4,6 +4,13 @@
 //   POST /api/card  { date, data }        -> { ok:true }
 const { redis, authUid, readBody } = require('./_lib');
 
+// 当天净结余正分 = max(0, 总加分 − 总扣分)
+function netOf(data) {
+  const sum = (arr) => (Array.isArray(arr) ? arr : []).reduce(
+    (s, r) => s + (parseFloat(r.lv) || 0) * (parseInt(r.ct) || 1), 0);
+  return Math.max(0, sum(data && data.adds) - sum(data && data.deducts));
+}
+
 module.exports = async (req, res) => {
   const uid = authUid(req);
   if (!uid) return res.status(401).json({ error: '请先登录' });
@@ -24,9 +31,15 @@ module.exports = async (req, res) => {
       const { date, data } = readBody(req);
       const d = String(date || '').slice(0, 10);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return res.status(400).json({ error: '日期格式应为 YYYY-MM-DD' });
+      // 维护存折：只把"当天净结余的变化量"累加进余额（重复保存 / 修改当天都不会重复计）
+      const newNet = netOf(data);
+      const oldRaw = await redis(['GET', `net:${uid}:${d}`]);
+      const oldNet = oldRaw ? parseFloat(oldRaw) : 0;
       await redis(['SET', `card:${uid}:${d}`, JSON.stringify(data || {})]);
+      await redis(['SET', `net:${uid}:${d}`, String(newNet)]);
       await redis(['SADD', `dates:${uid}`, d]);
-      return res.status(200).json({ ok: true });
+      const balance = await redis(['INCRBYFLOAT', `bank:${uid}`, String(newNet - oldNet)]);
+      return res.status(200).json({ ok: true, net: newNet, balance: Number(balance) });
     }
 
     return res.status(405).json({ error: '方法不允许' });

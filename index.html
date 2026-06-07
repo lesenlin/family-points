@@ -16,6 +16,7 @@
     margin:0; background:var(--bg); color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
     line-height:1.75; font-size:16px;
+    overflow-x:hidden;            /* 防止长链接把页面撑宽、可横向拖动 */
   }
   /* 顶部导航 */
   header{
@@ -58,6 +59,8 @@
   .md ul,.md ol{padding-left:1.4em;}
   .md li{margin:.25em 0;}
   .md strong{color:#b8531f;}
+  .md{overflow-wrap:anywhere;}
+  .md a{color:#c2611f; word-break:break-all; overflow-wrap:anywhere;}
   .md hr{border:none; border-top:1px dashed var(--line); margin:1.6em 0;}
   .md blockquote{
     margin:1em 0; padding:.6em 1.1em; background:var(--th);
@@ -407,8 +410,14 @@
       </div>
 
       <div class="pc-foot">
-        <label>📒 成长存折累计：<input type="number" id="bankPrev" placeholder="昨日" style="width:70px"> + 今日结余 <strong id="todayNet" style="color:#b8531f">0</strong> = <strong id="bankNow" style="color:#b8531f">0</strong> 分</label>
-        <label>家长签字：<input type="text" id="pcSign" placeholder="________"></label>
+        <span>📒 成长存折余额：<strong id="bankBalance" style="color:#b8531f;font-size:19px">…</strong> 分</span>
+        <span>今日预计 <strong id="todayNet" style="color:#48b15a">0</strong> 分（保存后自动入账）</span>
+      </div>
+      <div class="pc-foot" style="border:none;padding-top:0">
+        <label>🎁 兑换扣减：<input type="number" id="redeemPts" min="1" placeholder="花掉的分" style="width:90px"></label>
+        <button class="btn" id="redeemBtn">兑换</button>
+        <span class="savest" id="redeemState"></span>
+        <label style="margin-left:auto">家长签字：<input type="text" id="pcSign" placeholder="________"></label>
       </div>
       <div class="pc-foot" style="border:none;padding-top:0">
         <label style="flex:1">今日复盘 / 备注：<input type="text" id="pcNote" placeholder="我错在……，下次我会……" style="flex:1;min-width:240px"></label>
@@ -424,6 +433,7 @@
     wireCard();
     recalc();
     loadCard();
+    loadBank();
   }
 
   function wireCard(){
@@ -445,7 +455,7 @@
       wireRows(); recalc();
     };
     document.getElementById('pcDate').addEventListener('change', loadCard);
-    document.getElementById('bankPrev').addEventListener('input', recalc);
+    document.getElementById('redeemBtn').onclick = redeemPoints;
     wireRows();
   }
 
@@ -457,12 +467,12 @@
       lv: tr.querySelector('.lv').value,
       ct: tr.querySelector('.ct').value,
     }));
-    return { name:val('pcName'), bankPrev:val('bankPrev'), sign:val('pcSign'), note:val('pcNote'),
+    return { name:val('pcName'), sign:val('pcSign'), note:val('pcNote'),
              deducts:rows('#dBody'), adds:rows('#aBody') };
   }
   function applyCard(data){
     const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v||''; };
-    set('pcName',data.name); set('bankPrev',data.bankPrev); set('pcSign',data.sign); set('pcNote',data.note);
+    set('pcName',data.name); set('pcSign',data.sign); set('pcNote',data.note);
     if(data.name) localStorage.setItem('cardName', data.name);
     // 始终按记录重建行（即使为空，也回到默认空行，避免残留上一天的数据）
     const ds = (Array.isArray(data.deducts) && data.deducts.length) ? data.deducts.map(r=>deductRow(r.t,r.lv,r.ct)).join('') : '';
@@ -477,7 +487,7 @@
     document.getElementById('aBody').innerHTML = '';
     const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.value = v||''; };
     set('pcName', localStorage.getItem('cardName')||'');
-    set('bankPrev',''); set('pcSign',''); set('pcNote','');
+    set('pcSign',''); set('pcNote','');
     wireRows(); recalc();
   }
   async function loadCard(){
@@ -499,9 +509,26 @@
       st.textContent='保存中…'; st.className='savest';
       const data = serializeCard();
       if(data.name) localStorage.setItem('cardName', data.name);
-      await api('/api/card',{ method:'POST', body:{ date, data } });
+      const r = await api('/api/card',{ method:'POST', body:{ date, data } });
+      if(r && typeof r.balance==='number') setBank(r.balance);
       st.textContent='✓ 已保存到云端'; st.className='savest ok';
     }catch(e){ if(!handleAuthErr(e)){ st.textContent='保存失败：'+e.message; st.className='savest err'; } }
+  }
+  function setBank(n){ const el=document.getElementById('bankBalance'); if(el) el.textContent = Math.round((+n||0)*10)/10; }
+  async function loadBank(){
+    try{ const j=await api('/api/bank'); setBank(j.balance||0); }
+    catch(e){ if(!handleAuthErr(e)){ const el=document.getElementById('bankBalance'); if(el) el.textContent='—'; } }
+  }
+  async function redeemPoints(){
+    const inp=document.getElementById('redeemPts'), st=document.getElementById('redeemState');
+    const pts=parseFloat(inp.value);
+    if(!pts || pts<=0){ st.textContent='请输入要花掉的分数'; st.className='savest err'; return; }
+    try{
+      st.textContent='处理中…'; st.className='savest';
+      const j=await api('/api/bank',{ method:'POST', body:{ redeem:pts } });
+      setBank(j.balance); inp.value='';
+      st.textContent='✓ 已扣 '+pts+' 分，余额 '+(Math.round(j.balance*10)/10)+' 分'; st.className='savest ok';
+    }catch(e){ if(!handleAuthErr(e)){ st.textContent=e.message; st.className='savest err'; } }
   }
   function wireRows(){
     elContent.querySelectorAll('#dBody tr, #aBody tr').forEach(tr=>{
@@ -534,11 +561,9 @@
     });
     // 金星日
     document.getElementById('star').classList.toggle('on', remain>=18);
-    // 成长存折（只记当日净结余正分）
-    const realNet = Math.max(0, totA - totD);
-    document.getElementById('todayNet').textContent = realNet;
-    const prev = +document.getElementById('bankPrev').value || 0;
-    document.getElementById('bankNow').textContent = prev + realNet;
+    // 今日净结余正分（保存后自动入账存折）
+    const tn = document.getElementById('todayNet');
+    if(tn) tn.textContent = Math.max(0, totA - totD);
   }
 
   document.getElementById('reload').onclick = ()=>load(true);
