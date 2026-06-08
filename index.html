@@ -451,7 +451,7 @@
     document.getElementById('cardClear').onclick = ()=>{
       document.getElementById('dBody').innerHTML = '';
       document.getElementById('aBody').innerHTML = '';
-      ['pcName','bankPrev','pcSign','pcNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+      ['pcName','pcSign','pcNote'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
       wireRows(); recalc();
     };
     document.getElementById('pcDate').addEventListener('change', loadCard);
