@@ -4,11 +4,11 @@
 //   POST /api/card  { date, data }        -> { ok:true }
 const { redis, authUid, readBody } = require('./_lib');
 
-// 当天净结余正分 = max(0, 总加分 − 总扣分)
+// 当天得分 = 总加分 − 总扣分（基础分 0，可正可负，全部累计进账户）
 function netOf(data) {
   const sum = (arr) => (Array.isArray(arr) ? arr : []).reduce(
     (s, r) => s + (parseFloat(r.lv) || 0) * (parseInt(r.ct) || 1), 0);
-  return Math.max(0, sum(data && data.adds) - sum(data && data.deducts));
+  return sum(data && data.adds) - sum(data && data.deducts);
 }
 
 module.exports = async (req, res) => {

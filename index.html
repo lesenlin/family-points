@@ -371,7 +371,7 @@
       <div class="pc-head">
         <label>宝贝姓名：<input type="text" id="pcName" placeholder="________"></label>
         <label>日期：<input type="date" id="pcDate"></label>
-        <label>每日基础分：<strong style="color:#b8531f;font-size:18px">20</strong></label>
+        <label>每日基础分：<strong style="color:#b8531f;font-size:18px">0</strong>（加减相抵，可正可负）</label>
       </div>
 
       <div class="pc-sec">
@@ -393,19 +393,19 @@
       </div>
 
       <div class="pc-calc">
-        <div class="pc-box"><div class="lbl">基础分</div><div class="num">20</div></div>
+        <div class="pc-box"><div class="lbl">基础分</div><div class="num">0</div></div>
         <div class="pc-box"><div class="lbl">总加分</div><div class="num" id="sumA" style="color:#48b15a">+0</div></div>
         <div class="pc-box"><div class="lbl">总扣分</div><div class="num" id="sumD" style="color:#e0524d">−0</div></div>
-        <div class="pc-box final"><div class="lbl">当日剩余分数</div><div class="num" id="remain">20</div></div>
+        <div class="pc-box final"><div class="lbl">今日得分</div><div class="num" id="remain">0</div></div>
       </div>
 
       <div class="pc-sec">
-        <h3>📊 今日处置档 <span class="tag">（按剩余分数自动判定）</span> <span class="star" id="star">⭐ 金星日</span></h3>
+        <h3>📊 今日处置档 <span class="tag">（按今日得分自动判定；奖励另靠积分兑换）</span></h3>
         <div class="tiers">
-          <div class="tier" data-min="15"><span class="t-h">≥15 分 · 好天 😀</span>　只需温柔提醒，正常享受全部特权。</div>
-          <div class="tier" data-min="10" data-max="14"><span class="t-h">10–14 分 🙂</span>　扣 1 项娱乐特权 + 用 2 句话复盘。</div>
-          <div class="tier" data-min="0" data-max="9"><span class="t-h">0–9 分 😐</span>　取消自由活动 + 冷静角 5 分钟 + 复盘。</div>
-          <div class="tier" data-max="-0.001"><span class="t-h">≤0 分 😟</span>　取消全部特权 + 冷静角 7 分钟 + 1 项家务 + 书面反思 + 睡前谈心。</div>
+          <div class="tier" data-min="0"><span class="t-h">≥ 0 分 😀</span>　今天没有净失分，表现 OK。</div>
+          <div class="tier" data-min="-4" data-max="-0.001"><span class="t-h">−1 ~ −4 分 🙂</span>　口头提醒 + 用 2 句话复盘。</div>
+          <div class="tier" data-min="-9" data-max="-4.001"><span class="t-h">−5 ~ −9 分 😐</span>　冷静角 5 分钟 + 复盘。</div>
+          <div class="tier" data-max="-9.001"><span class="t-h">≤ −10 分 😟</span>　冷静角 7 分钟 + 1 项家务 + 书面反思 + 睡前谈心。</div>
         </div>
       </div>
 
@@ -547,23 +547,21 @@
       const v=+tr.querySelector('.lv').value, c=Math.max(1,+tr.querySelector('.ct').value||1);
       const s=v*c; totA+=s; tr.querySelector('.rt').textContent='+'+s;
     });
-    const remain = 20 + totA - totD;
+    const remain = totA - totD;   // 基础分 0，今日得分 = 加分 − 扣分（可正可负）
     document.getElementById('sumA').textContent='+'+totA;
     document.getElementById('sumD').textContent='−'+totD;
     const rEl=document.getElementById('remain');
-    rEl.textContent=remain;
-    rEl.style.color = remain>=15?'#48b15a' : remain>=10?'#d99a2b' : remain>=0?'#e0793b' : '#e0524d';
+    rEl.textContent = (remain>0?'+':'') + remain;
+    rEl.style.color = remain>=0?'#48b15a' : remain>=-4?'#d99a2b' : remain>=-9?'#e0793b' : '#e0524d';
     // 高亮处置档
     document.querySelectorAll('.tier').forEach(t=>{
       const mn = t.dataset.min!==undefined?+t.dataset.min:-Infinity;
       const mx = t.dataset.max!==undefined?+t.dataset.max:Infinity;
       t.classList.toggle('on', remain>=mn && remain<=mx);
     });
-    // 金星日
-    document.getElementById('star').classList.toggle('on', remain>=18);
-    // 今日净结余正分（保存后自动入账存折）
+    // 今日得分（正负都会在保存后累计进账户）
     const tn = document.getElementById('todayNet');
-    if(tn) tn.textContent = Math.max(0, totA - totD);
+    if(tn) tn.textContent = (remain>0?'+':'') + remain;
   }
 
   document.getElementById('reload').onclick = ()=>load(true);
